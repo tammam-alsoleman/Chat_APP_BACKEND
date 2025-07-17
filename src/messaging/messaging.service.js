@@ -1,9 +1,10 @@
 const messagingRepository = require('./messaging.repository');
-const { userService } = require('../users');
+const { userService, userRepository } = require('../users'); // We need userRepository for direct checks
 const logger = require('../core/logger');
 
 class MessagingService {
     async createChat(group_name, participantsUsernames) {
+        // This function is already correct
         logger.info(`Creating group '${group_name}' with participants: ${participantsUsernames.join(', ')}`);
         const groupId = await messagingRepository.createGroup(group_name);
         for (const username of participantsUsernames) {
@@ -13,19 +14,47 @@ class MessagingService {
     }
 
     async getChatsForUser(userId) {
+        // This function is already correct
         return messagingRepository.findGroupsByUserId(userId);
     }
 
+    // =================================================================
+    // THIS FUNCTION HAS BEEN EDITED
+    // =================================================================
     async addParticipantsToChat(groupId, participantsUsernames, requesterId) {
+        // Step 1: Check if the person making the request is a member (no change)
         const isMember = await messagingRepository.isUserInGroup(requesterId, groupId);
-        if (!isMember) throw new Error('User is not a member of the group');
-        
+        if (!isMember) {
+            throw new Error('User is not a member of the group');
+        }
+
+        // Step 2 (NEW): Validate that all users to be added actually exist.
+        // We use Promise.all to run all database checks in parallel for better performance.
+        const validationPromises = participantsUsernames.map(username => 
+            userRepository.findByUsername(username)
+        );
+
+        const foundUsers = await Promise.all(validationPromises);
+
+        // Check if any of the results were null/undefined, meaning the user was not found.
+        for (let i = 0; i < foundUsers.length; i++) {
+            if (!foundUsers[i]) {
+                // If a user was not found, create and throw a specific, identifiable error.
+                const err = new Error(`User with username '${participantsUsernames[i]}' does not exist.`);
+                err.name = 'UserNotFoundError'; // Give the error a name to identify it in the controller
+                throw err;
+            }
+        }
+        // End of new validation logic.
+
+        // Step 3: If all users are valid, proceed to add them (no change)
         for (const username of participantsUsernames) {
             await messagingRepository.addParticipantByUsername(groupId, username);
         }
     }
 
     async saveAndBroadcastMessage({ sender_id, group_id, text_message, clientMessageId }) {
+        // This function is already correct
         const isMember = await messagingRepository.isUserInGroup(sender_id, group_id);
         if (!isMember) throw new Error('User is not a member of the group');
 
@@ -67,6 +96,7 @@ class MessagingService {
     }
 
     async getChatHistory(userId, groupId) {
+        // This function is already correct
         const isMember = await messagingRepository.isUserInGroup(userId, groupId);
         if (!isMember) throw new Error('User is not a member of the group');
         return messagingRepository.findMessagesByGroupId(groupId);

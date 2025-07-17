@@ -26,7 +26,7 @@ class MessagingController {
         }
     }
 
-    async addParticipants(req, res) {
+     async addParticipants(req, res) {
         try {
             const { error, value } = addParticipantsSchema.validate(req.body);
             if (error) return res.status(400).json({ error: error.details[0].message });
@@ -37,7 +37,13 @@ class MessagingController {
             await messagingService.addParticipantsToChat(groupId, value.participants, requesterId);
             res.status(201).json({ message: 'Users added to group successfully' });
         } catch (error) {
-            const statusCode = error.message.includes('not a member') ? 403 : 500;
+            let statusCode = 500;
+            if (error.name === 'UserNotFoundError') {
+                statusCode = 404; // 404 Not Found is a good status for a missing user
+            } else if (error.message.includes('not a member')) {
+                statusCode = 403; // 403 Forbidden is correct for permission errors
+            }
+            
             logger.error('Error adding users to group:', error);
             res.status(statusCode).json({ error: error.message });
         }

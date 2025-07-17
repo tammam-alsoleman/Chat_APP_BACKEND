@@ -3,7 +3,7 @@ const { getPool } = require('../core/db');
 
 class MessagingRepository {
     async createGroup(groupName) {
-        const pool = getPool();
+        const pool = await getPool();
         const result = await pool.request()
             .input('group_name', sql.NVarChar(255), groupName)
             .query('INSERT INTO group_info (group_name, created_at) OUTPUT INSERTED.group_id VALUES (@group_name, GETDATE())');
@@ -11,7 +11,7 @@ class MessagingRepository {
     }
 
     async addParticipantByUsername(groupId, username) {
-        const pool = getPool();
+        const pool = await getPool();
         await pool.request()
             .input('group_id', sql.Int, groupId)
             .input('user_name', sql.NVarChar(50), username)
@@ -19,7 +19,7 @@ class MessagingRepository {
     }
 
     async findGroupsByUserId(userId) {
-        const pool = getPool();
+        const pool = await getPool();
         const result = await pool.request()
             .input('user_id', sql.Int, userId)
             .query('SELECT gi.group_id, gi.group_name, gi.created_at FROM group_info gi JOIN group_participant gp ON gi.group_id = gp.group_id WHERE gp.user_id = @user_id');
@@ -27,7 +27,7 @@ class MessagingRepository {
     }
 
     async isUserInGroup(userId, groupId) {
-        const pool = getPool();
+        const pool = await getPool();
         const result = await pool.request()
             .input('group_id', sql.Int, groupId)
             .input('user_id', sql.Int, userId)
@@ -36,7 +36,7 @@ class MessagingRepository {
     }
 
     async createMessage({ group_id, sender_id, text_message, clientMessageId }) {
-        const pool = getPool();
+        const pool = await getPool();
         const result = await pool.request()
             .input('group_id', sql.Int, group_id)
             .input('sender_id', sql.Int, sender_id)
@@ -47,7 +47,7 @@ class MessagingRepository {
     }
 
     async findMessageByClientId(clientMessageId) {
-        const pool = getPool();
+        const pool = await getPool();
         const result = await pool.request()
             .input('client_message_id', sql.NVarChar(sql.MAX), clientMessageId)
             .query('SELECT * FROM message WHERE client_message_id = @client_message_id');
@@ -55,7 +55,7 @@ class MessagingRepository {
     }
     
     async findMessagesByGroupId(groupId) {
-        const pool = getPool();
+        const pool = await getPool();
         const result = await pool.request()
             .input('group_id', sql.Int, groupId)
             .query('SELECT m.message_id, m.sender_id, u.user_name, m.sent_at, m.text_message FROM message m JOIN user_account u ON m.sender_id = u.user_id WHERE m.group_id = @group_id ORDER BY m.sent_at ASC');
@@ -63,7 +63,7 @@ class MessagingRepository {
     }
 
     async findGroupParticipantUsernames(groupId) {
-        const pool = getPool();
+        const pool = await getPool();
         const result = await pool.request()
             .input('group_id', sql.Int, groupId)
             .query('SELECT ua.user_name FROM user_account ua JOIN group_participant gp ON ua.user_id = gp.user_id WHERE gp.group_id = @group_id');
