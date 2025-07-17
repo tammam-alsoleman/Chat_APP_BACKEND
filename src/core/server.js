@@ -4,7 +4,7 @@ const cors = require('cors');
 const logger = require('./logger');
 
 const { authRouter, userRouter } = require('../users/user.routes');
-const messagingRoutes = require('../messaging/messaging.routes');
+const messagingRoutes = require('../messaging/interfaces/http/messaging.routes');
 
 const app = express();
 
