@@ -1,5 +1,5 @@
 const sql = require('mssql');
-const { getPool } = require('../../core/db'); // المسار صحيح لأنه يصعد مستويين
+const { getPool } = require('../core/db');
 
 class MessagingRepository {
     async createGroup(groupName) {
@@ -41,7 +41,7 @@ class MessagingRepository {
             .input('group_id', sql.Int, group_id)
             .input('sender_id', sql.Int, sender_id)
             .input('text_message', sql.NVarChar(sql.MAX), text_message)
-            .input('client_message_id', sql.VarChar(255), clientMessageId)
+            .input('client_message_id', sql.NVarChar(sql.MAX), clientMessageId)
             .query('INSERT INTO message (group_id, sender_id, sent_at, text_message, client_message_id) OUTPUT INSERTED.message_id, INSERTED.sent_at VALUES (@group_id, @sender_id, GETDATE(), @text_message, @client_message_id)');
         return result.recordset[0];
     }
@@ -49,7 +49,7 @@ class MessagingRepository {
     async findMessageByClientId(clientMessageId) {
         const pool = getPool();
         const result = await pool.request()
-            .input('client_message_id', sql.VarChar(255), clientMessageId)
+            .input('client_message_id', sql.NVarChar(sql.MAX), clientMessageId)
             .query('SELECT * FROM message WHERE client_message_id = @client_message_id');
         return result.recordset[0];
     }

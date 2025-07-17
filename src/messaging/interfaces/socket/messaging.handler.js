@@ -6,8 +6,9 @@ const registerMessagingHandlers = (io, socket) => {
     const onSendMessage = async (data, callback) => {
         try {
             const { chatId, text, clientMessageId } = data || {};
-            if (!chatId || !text || !clientMessageId) {
-                if (typeof callback === 'function') callback({ success: false, error: 'Missing required data' });
+            if (!chatId || !clientMessageId) {
+                // Text can be null for file messages etc., but chatId and clientMessageId are essential
+                if (typeof callback === 'function') callback({ success: false, error: 'Missing required data: chatId and clientMessageId' });
                 return;
             }
 
@@ -28,7 +29,7 @@ const registerMessagingHandlers = (io, socket) => {
                 const { messagePayload, participantsToNotify } = result;
                 participantsToNotify.forEach(username => {
                     const recipientSocketId = presenceService.getUserSocketIdByUsername(username);
-                    if (recipientSocketId) {
+                    if (recipientSocketId && recipientSocketId !== socket.id) { // Don't send back to the original sender
                         io.to(recipientSocketId).emit('newMessage', messagePayload);
                     }
                 });
