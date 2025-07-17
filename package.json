@@ -1,0 +1,23 @@
+{
+  "name": "modular-chat-app",
+  "version": "1.0.0",
+  "description": "A chat application with WebRTC calls built on a Modular Monolith architecture.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.0",
+    "mssql": "^11.0.1",
+    "socket.io": "^4.7.1",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
