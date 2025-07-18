@@ -54,8 +54,17 @@ class MessagingController {
             const groupId = parseInt(req.params.chatId, 10);
             if (isNaN(groupId)) return res.status(400).json({ error: 'Invalid chat ID' });
             
+            // Extract Pagination parameters from the query string
+            // If not provided, their values will be undefined
+            const beforeMessageId = req.query.beforeMessageId ? parseInt(req.query.beforeMessageId, 10) : undefined;
+            const limit = req.query.limit ? parseInt(req.query.limit, 10) : 30; 
+            // --------------------
+
             const userId = req.user.user_id;
-            const messages = await messagingService.getChatHistory(userId, groupId);
+            
+            // Pass the new parameters to the service
+            const messages = await messagingService.getChatHistory(userId, groupId, { beforeMessageId, limit });
+
             res.status(200).json(messages);
         } catch (error) {
             const statusCode = error.message.includes('not a member') ? 403 : 500;

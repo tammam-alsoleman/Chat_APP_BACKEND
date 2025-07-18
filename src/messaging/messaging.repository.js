@@ -54,11 +54,42 @@ class MessagingRepository {
         return result.recordset[0];
     }
     
-    async findMessagesByGroupId(groupId) {
-        const pool = await getPool();
-        const result = await pool.request()
-            .input('group_id', sql.Int, groupId)
-            .query('SELECT m.message_id, m.sender_id, u.user_name, m.sent_at, m.text_message FROM message m JOIN user_account u ON m.sender_id = u.user_id WHERE m.group_id = @group_id ORDER BY m.sent_at ASC');
+    async findMessagesByGroupId(groupId, options = {}) {
+        const { beforeMessageId, limit = 30 } = options; // قيمة افتراضية هنا أيضاً
+        const pool = getPool();
+        const request = pool.request();
+        
+        let whereClause = `WHERE m.group_id = @group_id`;
+        request.input('group_id', sql.Int, groupId);
+
+        if (beforeMessageId) {
+            whereClause += ` AND m.message_id < @beforeMessageId`;
+            request.input('beforeMessageId', sql.Int, beforeMessageId);
+        }
+        
+        // بناء الاستعلام النهائي
+        // نستخدم TOP لجلب عدد محدد من الرسائل (limit)
+        // ونرتب تنازلياً لجلب الأحدث أولاً، ثم نعكس الترتيب في التطبيق إذا لزم الأمر
+        const query = `
+            SELECT TOP ${limit}
+                m.message_id, 
+                m.sender_id, 
+                u.user_name, 
+                m.sent_at, 
+                m.text_message 
+            FROM 
+                message m 
+            JOIN 
+                user_account u ON m.sender_id = u.user_id 
+            ${whereClause}
+            ORDER BY 
+                m.message_id DESC
+        `;
+
+        const result = await request.query(query);
+
+        // النتيجة الآن مرتبة من الأحدث إلى الأقدم، قد تحتاج إلى عكسها في العميل
+        // .reverse()
         return result.recordset;
     }
 

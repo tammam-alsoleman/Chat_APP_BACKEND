@@ -95,11 +95,13 @@ class MessagingService {
         return { isDuplicate: false, messagePayload, participantsToNotify };
     }
 
-    async getChatHistory(userId, groupId) {
-        // This function is already correct
+    async getChatHistory(userId, groupId, options = {}) {
+        const { beforeMessageId, limit } = options;
+
         const isMember = await messagingRepository.isUserInGroup(userId, groupId);
         if (!isMember) throw new Error('User is not a member of the group');
-        return messagingRepository.findMessagesByGroupId(groupId);
+
+        return messagingRepository.findMessagesByGroupId(groupId, { beforeMessageId, limit });
     }
 }
 

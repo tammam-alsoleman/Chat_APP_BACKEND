@@ -11,8 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/auth', authRouter); // استخدم authRouter مباشرة
-app.use('/api/users', userRouter); // استخدم userRouter مباشرة
+app.use('/api/auth', authRouter); // Use authRouter directly
+app.use('/api/users', userRouter); // Use userRouter directly
 app.use('/api/chats', messagingRoutes);
 
 app.get('/', (req, res) => res.send('Chat Server is running !'));
