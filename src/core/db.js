@@ -1,5 +1,3 @@
-// src/core/db.js - IMPROVED AND ROBUST VERSION
-
 const sql = require('mssql');
 const config = require('./config');
 const logger = require('./logger');
