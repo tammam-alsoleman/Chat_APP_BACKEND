@@ -7,7 +7,8 @@ const { initializeSocket } = require('./core/socket');
 async function main() {
   try {
     logger.info('Application starting...');
-    await connectToDb();
+await connectToDb();
+logger.info('Database connection pool initialized.');
     const server = startServer(config.API_PORT);
     const io = initializeSocket(server);
 
@@ -19,7 +20,7 @@ async function main() {
     process.on('SIGINT', async () => {
       logger.info('SIGINT received. Shutting down gracefully...');
       const { getPool } = require('./core/db');
-      const pool = getPool(false); // Get pool without throwing error
+const pool = await getPool(); // Get pool and await it
       if (pool) {
         await pool.close();
         logger.info('SQL Server connection pool closed.');

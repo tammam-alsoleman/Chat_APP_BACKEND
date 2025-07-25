@@ -71,6 +71,7 @@ class MessagingService {
                     user_name: senderInfo.user_name,
                     text_message: existingMessage.text_message,
                     sent_at: existingMessage.sent_at,
+                    client_message_id: existingMessage.client_message_id // <-- ensure this is present
                 }
             };
         }
@@ -89,7 +90,8 @@ class MessagingService {
             sender_id,
             user_name: senderInfo.user_name,
             text_message,
-            sent_at: newMessage.sent_at
+            sent_at: newMessage.sent_at,
+            client_message_id: clientMessageId // <-- ensure this is present
         };
 
         return { isDuplicate: false, messagePayload, participantsToNotify };

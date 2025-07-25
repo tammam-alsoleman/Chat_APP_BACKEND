@@ -19,7 +19,7 @@ app.get('/', (req, res) => res.send('Chat Server is running !'));
 
 const startServer = (port) => {
   const server = http.createServer(app);
-  server.listen(port, () => logger.info(`HTTP Server running on port ${port}`));
+  server.listen(port,'0.0.0.0', () => logger.info(`HTTP Server running on port ${port}`));
   server.app = app;
   return server;
 };

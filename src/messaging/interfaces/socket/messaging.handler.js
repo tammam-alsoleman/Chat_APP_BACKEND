@@ -26,13 +26,23 @@ const registerMessagingHandlers = (io, socket) => {
             });
             
             if (!result.isDuplicate) {
-                const { messagePayload, participantsToNotify } = result;
-                participantsToNotify.forEach(username => {
-                    const recipientSocketId = presenceService.getUserSocketIdByUsername(username);
-                    if (recipientSocketId && recipientSocketId !== socket.id) { // Don't send back to the original sender
-                        io.to(recipientSocketId).emit('newMessage', messagePayload);
-                    }
-                });
+                let { messagePayload, participantsToNotify } = result;
+                // Ensure sender is included in participantsToNotify
+                const senderUsername = socket.userId;
+                if (!participantsToNotify.includes(senderUsername)) {
+                    participantsToNotify.push(senderUsername);
+                }
+                if (typeof messagePayload === 'object' && messagePayload !== null) {
+                    participantsToNotify.forEach(username => {
+                        const recipientSocketId = presenceService.getUserSocketIdByUsername(username);
+                        if (recipientSocketId) {
+                            logger.info(`Broadcasting 'newMessage' to ${username} (${recipientSocketId})`);
+                            io.to(recipientSocketId).emit('newMessage', messagePayload); 
+                        }
+                    });
+                } else {
+                    logger.error("Attempted to broadcast invalid messagePayload:", messagePayload);
+                }
             }
 
             if (typeof callback === 'function') {
