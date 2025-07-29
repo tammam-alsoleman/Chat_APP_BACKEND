@@ -34,38 +34,173 @@ class EncryptionService {
     // Server only manages keys and stores encrypted messages
 
     /**
-     * Encrypt a symmetric key with a user's public key (RSA)
-     * This simulates the server encrypting the group key with user's public key
-     * In real implementation, this would use proper RSA encryption
+     * Encrypt a symmetric key with a user's public key (RSA-OAEP)
      * @param {string} symmetricKey - Base64 encoded symmetric key
-     * @param {string} publicKey - User's RSA public key
-     * @returns {string} Encrypted symmetric key
+     * @param {string} publicKey - User's RSA public key (PEM format)
+     * @returns {string} Encrypted symmetric key (base64 encoded)
      */
     encryptSymmetricKeyWithPublicKey(symmetricKey, publicKey) {
         try {
-            // For now, we'll use a simple encryption method
-            // In production, you'd use proper RSA encryption
             const keyBuffer = Buffer.from(symmetricKey, 'base64');
-            const publicKeyBuffer = Buffer.from(publicKey, 'utf8');
             
-            // Create a hash of the public key for encryption
-            const hash = crypto.createHash('sha256').update(publicKeyBuffer).digest();
-            
-            // XOR encryption (this is just for demonstration - use proper RSA in production)
-            const encrypted = Buffer.alloc(keyBuffer.length);
-            for (let i = 0; i < keyBuffer.length; i++) {
-                encrypted[i] = keyBuffer[i] ^ hash[i % hash.length];
+            // Validate public key format (basic check)
+            if (!publicKey.includes('-----BEGIN') && !publicKey.includes('-----END')) {
+                throw new Error('Invalid public key format - must be PEM format');
             }
+            
+            // Use proper RSA-OAEP encryption
+            const encrypted = crypto.publicEncrypt({
+                key: publicKey,
+                padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256'
+            }, keyBuffer);
             
             return encrypted.toString('base64');
         } catch (error) {
             logger.error('Error encrypting symmetric key with public key:', error);
-            throw new Error('Failed to encrypt symmetric key');
+            if (error.message.includes('error:04075070')) {
+                throw new Error('Invalid public key format');
+            }
+            throw new Error('Failed to encrypt symmetric key: ' + error.message);
         }
     }
 
-    // Note: Message encryption/decryption packages are handled by the client
-    // Server only stores and distributes encrypted messages
+    /**
+     * Decrypt a symmetric key with a user's private key (RSA-OAEP)
+     * @param {string} encryptedKey - Base64 encoded encrypted symmetric key
+     * @param {string} privateKey - User's RSA private key (PEM format)
+     * @returns {string} Decrypted symmetric key (base64 encoded)
+     */
+    decryptSymmetricKeyWithPrivateKey(encryptedKey, privateKey) {
+        try {
+            const encryptedBuffer = Buffer.from(encryptedKey, 'base64');
+            
+            // Validate private key format (basic check)
+            if (!privateKey.includes('-----BEGIN') && !privateKey.includes('-----END')) {
+                throw new Error('Invalid private key format - must be PEM format');
+            }
+            
+            // Use proper RSA-OAEP decryption
+            const decrypted = crypto.privateDecrypt({
+                key: privateKey,
+                padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256'
+            }, encryptedBuffer);
+            
+            return decrypted.toString('base64');
+        } catch (error) {
+            logger.error('Error decrypting symmetric key with private key:', error);
+            if (error.message.includes('error:04075070')) {
+                throw new Error('Invalid private key format');
+            }
+            throw new Error('Failed to decrypt symmetric key: ' + error.message);
+        }
+    }
+
+    /**
+     * Encrypt a message with AES-256-GCM
+     * @param {string} message - Plain text message
+     * @param {string} symmetricKey - Base64 encoded symmetric key
+     * @returns {object} Encrypted message with IV and auth tag
+     */
+    encryptWithAES(message, symmetricKey) {
+        try {
+            const keyBuffer = Buffer.from(symmetricKey, 'base64');
+            const iv = crypto.randomBytes(12); // 12 bytes for GCM (96-bit)
+            
+            const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
+            cipher.setAAD(Buffer.from('chat-app')); // Additional authenticated data
+            
+            let encrypted = cipher.update(message, 'utf8', 'base64');
+            encrypted += cipher.final('base64');
+            
+            const authTag = cipher.getAuthTag();
+            
+            return {
+                encryptedData: encrypted,
+                iv: iv.toString('base64'),
+                authTag: authTag.toString('base64')
+            };
+        } catch (error) {
+            logger.error('Error encrypting message with AES:', error);
+            throw new Error('Failed to encrypt message');
+        }
+    }
+
+    /**
+     * Decrypt a message with AES-256-GCM
+     * @param {string} encryptedData - Base64 encoded encrypted data
+     * @param {string} symmetricKey - Base64 encoded symmetric key
+     * @param {string} iv - Base64 encoded initialization vector
+     * @param {string} authTag - Base64 encoded authentication tag
+     * @returns {string} Decrypted plain text message
+     */
+    decryptWithAES(encryptedData, symmetricKey, iv, authTag) {
+        try {
+            const keyBuffer = Buffer.from(symmetricKey, 'base64');
+            const ivBuffer = Buffer.from(iv, 'base64');
+            const authTagBuffer = Buffer.from(authTag, 'base64');
+            
+            const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, ivBuffer);
+            decipher.setAAD(Buffer.from('chat-app')); // Same AAD as encryption
+            decipher.setAuthTag(authTagBuffer);
+            
+            let decrypted = decipher.update(encryptedData, 'base64', 'utf8');
+            decrypted += decipher.final('utf8');
+            
+            return decrypted;
+        } catch (error) {
+            logger.error('Error decrypting message with AES:', error);
+            throw new Error('Failed to decrypt message - invalid key or corrupted data');
+        }
+    }
+
+    /**
+     * Create an encrypted message package with metadata
+     * @param {string} message - Plain text message
+     * @param {string} symmetricKey - Base64 encoded symmetric key
+     * @returns {object} Complete encrypted message package
+     */
+    createEncryptedMessage(message, symmetricKey) {
+        try {
+            const encrypted = this.encryptWithAES(message, symmetricKey);
+            
+            return {
+                encryptedContent: encrypted.encryptedData,
+                iv: encrypted.iv,
+                authTag: encrypted.authTag,
+                timestamp: new Date().toISOString(),
+                algorithm: 'aes-256-gcm'
+            };
+        } catch (error) {
+            logger.error('Error creating encrypted message package:', error);
+            throw new Error('Failed to create encrypted message package');
+        }
+    }
+
+    /**
+     * Decrypt an encrypted message package
+     * @param {object} messagePackage - Encrypted message package
+     * @param {string} symmetricKey - Base64 encoded symmetric key
+     * @returns {string} Decrypted plain text message
+     */
+    decryptMessage(messagePackage, symmetricKey) {
+        try {
+            if (!messagePackage.encryptedContent || !messagePackage.iv || !messagePackage.authTag) {
+                throw new Error('Invalid message package format');
+            }
+            
+            return this.decryptWithAES(
+                messagePackage.encryptedContent,
+                symmetricKey,
+                messagePackage.iv,
+                messagePackage.authTag
+            );
+        } catch (error) {
+            logger.error('Error decrypting message package:', error);
+            throw new Error('Failed to decrypt message package');
+        }
+    }
 
     /**
      * Generate a random string for key IDs or nonces
