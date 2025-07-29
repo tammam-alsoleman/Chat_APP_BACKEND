@@ -7,8 +7,8 @@ const { initializeSocket } = require('./core/socket');
 async function main() {
   try {
     logger.info('Application starting...');
-await connectToDb();
-logger.info('Database connection pool initialized.');
+    await connectToDb();
+    logger.info('Database connection pool initialized.');
     const server = startServer(config.API_PORT);
     const io = initializeSocket(server);
 

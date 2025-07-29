@@ -43,19 +43,8 @@ async function getPool() {
 }
 
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received. Closing SQL Server connection pool...');
-  if (pool) {
-    try {
-      await pool.close();
-      logger.info('SQL Server connection pool closed.');
-    } catch (err) {
-      logger.error('Error closing SQL Server connection pool during shutdown:', err);
-    }
-  }
-  process.exit(0);
-});
+// Note: SIGINT handling is done in the main application (src/index.js)
+// to avoid conflicts and ensure proper shutdown order
 
 // We still export connectToDb for the initial startup, and getPool for repositories
 module.exports = { connectToDb, getPool };
