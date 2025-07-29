@@ -34,38 +34,39 @@ class EncryptionService {
     // Server only manages keys and stores encrypted messages
 
     /**
-     * Encrypt a symmetric key with a user's public key (RSA)
-     * This simulates the server encrypting the group key with user's public key
-     * In real implementation, this would use proper RSA encryption
+     * Encrypt a symmetric key with a user's public key (RSA-OAEP)
      * @param {string} symmetricKey - Base64 encoded symmetric key
-     * @param {string} publicKey - User's RSA public key
-     * @returns {string} Encrypted symmetric key
+     * @param {string} publicKey - User's RSA public key (PEM format)
+     * @returns {string} Encrypted symmetric key (base64 encoded)
      */
     encryptSymmetricKeyWithPublicKey(symmetricKey, publicKey) {
         try {
-            // For now, we'll use a simple encryption method
-            // In production, you'd use proper RSA encryption
             const keyBuffer = Buffer.from(symmetricKey, 'base64');
-            const publicKeyBuffer = Buffer.from(publicKey, 'utf8');
             
-            // Create a hash of the public key for encryption
-            const hash = crypto.createHash('sha256').update(publicKeyBuffer).digest();
-            
-            // XOR encryption (this is just for demonstration - use proper RSA in production)
-            const encrypted = Buffer.alloc(keyBuffer.length);
-            for (let i = 0; i < keyBuffer.length; i++) {
-                encrypted[i] = keyBuffer[i] ^ hash[i % hash.length];
+            // Validate public key format (basic check)
+            if (!publicKey.includes('-----BEGIN') && !publicKey.includes('-----END')) {
+                throw new Error('Invalid public key format - must be PEM format');
             }
+            
+            // Use proper RSA-OAEP encryption
+            const encrypted = crypto.publicEncrypt({
+                key: publicKey,
+                padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256'
+            }, keyBuffer);
             
             return encrypted.toString('base64');
         } catch (error) {
             logger.error('Error encrypting symmetric key with public key:', error);
-            throw new Error('Failed to encrypt symmetric key');
+            if (error.message.includes('error:04075070')) {
+                throw new Error('Invalid public key format');
+            }
+            throw new Error('Failed to encrypt symmetric key: ' + error.message);
         }
     }
 
-    // Note: Message encryption/decryption packages are handled by the client
-    // Server only stores and distributes encrypted messages
+    // Note: Message encryption/decryption is handled client-side for end-to-end encryption
+    // Server only manages key distribution and stores encrypted messages
 
     /**
      * Generate a random string for key IDs or nonces

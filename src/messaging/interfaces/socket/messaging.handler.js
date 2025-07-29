@@ -21,7 +21,7 @@ const registerMessagingHandlers = (io, socket) => {
             const result = await messagingService.saveAndBroadcastMessage({
                 sender_id: senderId,
                 group_id: chatId,
-                text_message: text,
+                encrypted_content: text, // Note: Client should send pre-encrypted content
                 clientMessageId: clientMessageId,
             });
             
