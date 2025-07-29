@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const config = require('../core/config');
 const userRepository = require('./user.repository');
 const logger = require('../core/logger');
@@ -13,7 +14,11 @@ async signUp({ user_name, password, display_name, public_key }) {
         throw new Error('Invalid public key format');
     }
 
-    const newUser = await userRepository.create({ user_name, password, display_name, public_key });
+    // Hash the password before storing
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const newUser = await userRepository.create({ user_name, password: hashedPassword, display_name, public_key });
     const token = jwt.sign({ user_id: newUser.user_id }, config.JWT_SECRET, { expiresIn: '1h' });
     
     logger.info('User created successfully with public key:', { userId: newUser.user_id });
@@ -24,7 +29,8 @@ async signUp({ user_name, password, display_name, public_key }) {
         const user = await userRepository.findByUsername(user_name);
         if (!user) throw new Error('User not found');
 
-        if (user.password !== password) throw new Error('Password not true');
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) throw new Error('Invalid password');
 
         const token = jwt.sign({ user_id: user.user_id }, config.JWT_SECRET, { expiresIn: '1h' });
         logger.info('User logged in successfully:', { userId: user.user_id });

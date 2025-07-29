@@ -1,4 +1,4 @@
-const { encryptionRepository } = require('c:/Users/User/Desktop/project/BACK/src/core/services/encryption/index');
+const { encryptionRepository } = require('./src/core/services/encryption/index');
 console.log('Current working directory:', process.cwd());
 async function getGroupKeyExample(groupId) {
     try {
