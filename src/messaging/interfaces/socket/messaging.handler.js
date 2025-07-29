@@ -56,6 +56,18 @@ const registerMessagingHandlers = (io, socket) => {
     };
 
     socket.on('sendMessage', onSendMessage);
+
+    const onGetGroupKey = async (data, callback) => {
+        try {
+            const { chatId } = data;
+            const userId = socket.userId;
+            const keyInfo = await messagingService.getGroupEncryptionKey(userId, chatId);
+            if (typeof callback === 'function') callback({ success: true, ...keyInfo });
+        } catch (error) {
+            if (typeof callback === 'function') callback({ success: false, error: error.message });
+        }
+    };
+    socket.on('getGroupKey', onGetGroupKey);
 };
 
 module.exports = registerMessagingHandlers;

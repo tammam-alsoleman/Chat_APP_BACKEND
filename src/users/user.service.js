@@ -4,14 +4,19 @@ const userRepository = require('./user.repository');
 const logger = require('../core/logger');
 
 class UserService {
-async signUp({ user_name, password, display_name }) {
+async signUp({ user_name, password, display_name, public_key }) {
     const existingUser = await userRepository.findByUsername(user_name);
     if (existingUser) throw new Error('User with the same username already exists');
 
-    const newUser = await userRepository.create({ user_name, password, display_name });
+    // Validate public key format (basic check)
+    if (!public_key || public_key.length < 100) {
+        throw new Error('Invalid public key format');
+    }
+
+    const newUser = await userRepository.create({ user_name, password, display_name, public_key });
     const token = jwt.sign({ user_id: newUser.user_id }, config.JWT_SECRET, { expiresIn: '1h' });
     
-    logger.info('User created successfully:', { userId: newUser.user_id });
+    logger.info('User created successfully with public key:', { userId: newUser.user_id });
     return { user_id: newUser.user_id, token };
 }
 
@@ -34,6 +39,12 @@ async signUp({ user_name, password, display_name }) {
         const user = await userRepository.findById(userId);
         if (!user) throw new Error('User not found');
         return user;
+    }
+
+    async getPublicKey(userId) {
+        const publicKey = await userRepository.getPublicKey(userId);
+        if (!publicKey) throw new Error('User public key not found');
+        return { public_key: publicKey };
     }
 }
 

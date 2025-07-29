@@ -47,5 +47,16 @@ class UserController {
             res.status(statusCode).json({ error: error.message });
         }
     }
+
+    async getPublicKey(req, res) {
+        try {
+            const userId = req.user.user_id;
+            const publicKey = await userService.getPublicKey(userId);
+            res.status(200).json(publicKey);
+        } catch (error) {
+            const statusCode = error.message.includes('not found') ? 404 : 500;
+            res.status(statusCode).json({ error: error.message });
+        }
+    }
 }
 module.exports = new UserController();

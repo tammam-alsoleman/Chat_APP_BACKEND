@@ -8,7 +8,10 @@ class MessagingController {
             const { error, value } = createChatSchema.validate(req.body);
             if (error) return res.status(400).json({ error: error.details[0].message });
             const { groupId } = await messagingService.createChat(value.group_name, value.participants);
-            res.status(201).json({ message: 'Group created successfully', group_id: groupId });
+            // Fetch the encrypted group key for the creator
+            const userId = req.user.user_id;
+            const keyInfo = await messagingService.getGroupEncryptionKey(userId, groupId);
+            res.status(201).json({ message: 'Group created successfully', group_id: groupId, ...keyInfo });
         } catch (error) {
             logger.error('Error creating group:', error);
             res.status(500).json({ error: 'Internal server error' });
@@ -19,7 +22,16 @@ class MessagingController {
         try {
             const userId = req.user.user_id;
             const groups = await messagingService.getChatsForUser(userId);
-            res.status(200).json(groups);
+            // For each group, fetch the encrypted group key for this user
+            const groupsWithKeys = await Promise.all(groups.map(async (group) => {
+                try {
+                    const keyInfo = await messagingService.getGroupEncryptionKey(userId, group.group_id);
+                    return { ...group, ...keyInfo };
+                } catch (e) {
+                    return { ...group, encrypted_symmetric_key: null, key_version: null };
+                }
+            }));
+            res.status(200).json(groupsWithKeys);
         } catch (error) {
             logger.error('Error retrieving groups:', error);
             res.status(500).json({ error: 'Internal server error' });
@@ -70,6 +82,18 @@ class MessagingController {
             const statusCode = error.message.includes('not a member') ? 403 : 500;
             logger.error('Error fetching chat history:', error);
             res.status(statusCode).json({ error: error.message });
+        }
+    }
+
+    async getGroupKey(req, res) {
+        try {
+            const groupId = parseInt(req.params.chatId, 10);
+            if (isNaN(groupId)) return res.status(400).json({ error: 'Invalid chat ID' });
+            const userId = req.user.user_id;
+            const keyInfo = await messagingService.getGroupEncryptionKey(userId, groupId);
+            res.status(200).json(keyInfo);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
     }
 }

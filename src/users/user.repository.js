@@ -14,17 +14,26 @@ class UserRepository {
         const pool = await getPool();
         const result = await pool.request()
             .input('user_id', sql.Int, userId)
-            .query('SELECT user_id, user_name, display_name FROM user_account WHERE user_id = @user_id');
+            .query('SELECT user_id, user_name, display_name, public_key FROM user_account WHERE user_id = @user_id');
         return result.recordset[0];
     }
 
-    async create({ user_name, password, display_name }) {
+    async getPublicKey(userId) {
+        const pool = await getPool();
+        const result = await pool.request()
+            .input('user_id', sql.Int, userId)
+            .query('SELECT public_key FROM user_account WHERE user_id = @user_id');
+        return result.recordset[0]?.public_key;
+    }
+
+    async create({ user_name, password, display_name, public_key }) {
         const pool = await getPool();
         const result = await pool.request()
             .input('user_name', sql.NVarChar(50), user_name)
             .input('password', sql.NVarChar(255), password)
             .input('display_name', sql.NVarChar(50), display_name)
-            .query('INSERT INTO user_account (user_name, password, display_name) OUTPUT INSERTED.user_id VALUES (@user_name, @password, @display_name)');
+            .input('public_key', sql.NVarChar(sql.MAX), public_key)
+            .query('INSERT INTO user_account (user_name, password, display_name, public_key) OUTPUT INSERTED.user_id VALUES (@user_name, @password, @display_name, @public_key)');
         return result.recordset[0];
     }
 

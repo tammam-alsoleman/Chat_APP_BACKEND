@@ -35,14 +35,15 @@ class MessagingRepository {
         return result.recordset[0].count > 0;
     }
 
-    async createMessage({ group_id, sender_id, text_message, clientMessageId }) {
+    async createEncryptedMessage({ group_id, sender_id, encrypted_content, clientMessageId, is_encrypted = true }) {
         const pool = await getPool();
         const result = await pool.request()
             .input('group_id', sql.Int, group_id)
             .input('sender_id', sql.Int, sender_id)
-            .input('text_message', sql.NVarChar(sql.MAX), text_message)
+            .input('encrypted_content', sql.NVarChar(sql.MAX), encrypted_content)
+            .input('is_encrypted', sql.Bit, is_encrypted)
             .input('client_message_id', sql.NVarChar(sql.MAX), clientMessageId)
-            .query('INSERT INTO message (group_id, sender_id, sent_at, text_message, client_message_id) OUTPUT INSERTED.message_id, INSERTED.sent_at VALUES (@group_id, @sender_id, GETDATE(), @text_message, @client_message_id)');
+            .query('INSERT INTO message (group_id, sender_id, sent_at, encrypted_content, is_encrypted, client_message_id) OUTPUT INSERTED.message_id, INSERTED.sent_at VALUES (@group_id, @sender_id, GETDATE(), @encrypted_content, @is_encrypted, @client_message_id)');
         return result.recordset[0];
     }
 
@@ -99,6 +100,21 @@ class MessagingRepository {
             .input('group_id', sql.Int, groupId)
             .query('SELECT ua.user_name FROM user_account ua JOIN group_participant gp ON ua.user_id = gp.user_id WHERE gp.group_id = @group_id');
         return result.recordset.map(user => user.user_name);
+    }
+
+    async deleteGroup(groupId) {
+        const pool = await getPool();
+        await pool.request()
+            .input('group_id', sql.Int, groupId)
+            .query('DELETE FROM group_info WHERE group_id = @group_id');
+    }
+
+    async removeParticipantByUsername(groupId, username) {
+        const pool = await getPool();
+        await pool.request()
+            .input('group_id', sql.Int, groupId)
+            .input('user_name', sql.NVarChar(50), username)
+            .query('DELETE FROM group_participant WHERE group_id = @group_id AND user_id = (SELECT user_id FROM user_account WHERE user_name = @user_name)');
     }
 }
 

@@ -11,6 +11,7 @@ const envSchema = Joi.object().keys({
   DB_OPTIONS_TRUST_SERVER_CERTIFICATE: Joi.boolean().default(true),
   API_PORT: Joi.number().integer().default(5000),
   JWT_SECRET: Joi.string().required(),
+  MASTER_ENCRYPTION_KEY: Joi.string().required(),
 }).unknown(); 
 
 const { error, value: envVars } = envSchema.validate(process.env);
@@ -23,6 +24,7 @@ if (error) {
 const config = {
   API_PORT: envVars.API_PORT,
   JWT_SECRET: envVars.JWT_SECRET,
+  MASTER_ENCRYPTION_KEY: envVars.MASTER_ENCRYPTION_KEY,
   db: {
     user: envVars.DB_USER,
     password: envVars.DB_PASSWORD,

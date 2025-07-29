@@ -11,5 +11,6 @@ authRouter.post('/log_in', userController.logIn);
 userRouter.use(authenticateToken);
 userRouter.get('/search', userController.searchUsers);
 userRouter.get('/me', userController.getMe);
+userRouter.get('/public-key', userController.getPublicKey);
 
 module.exports = { authRouter, userRouter };
