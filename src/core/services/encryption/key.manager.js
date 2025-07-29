@@ -84,7 +84,7 @@ class KeyManager {
             const groupSymmetricKey = this.generateGroupKey(groupId);
             
             // 1. Encrypt group key with master key (for server access)
-            const serverEncryptedKey = this.encryptionService.encryptGroupKeyWithMasterKey(groupSymmetricKey);
+            const serverEncryption = this.encryptionService.encryptGroupKeyWithMasterKey(groupSymmetricKey);
             
             // 2. Encrypt the key for each participant (for client distribution)
             const encryptedKeys = this.encryptGroupKeyForParticipants(groupSymmetricKey, participants);
@@ -93,7 +93,8 @@ class KeyManager {
             const keyPackage = {
                 group_id: groupId,
                 group_symmetric_key: groupSymmetricKey, // Plain key for immediate use
-                server_encrypted_key: serverEncryptedKey, // Encrypted with master key
+                server_encrypted_key: serverEncryption.encryptedData, // Encrypted with master key
+                server_encrypted_iv: serverEncryption.iv, // IV for master key encryption
                 encrypted_keys: encryptedKeys, // Encrypted with user public keys
                 key_version: 1,
                 created_at: new Date(),
@@ -123,7 +124,7 @@ class KeyManager {
             const newGroupSymmetricKey = this.generateGroupKey(groupId);
             
             // 1. Encrypt new key with master key (for server access)
-            const serverEncryptedKey = this.encryptionService.encryptGroupKeyWithMasterKey(newGroupSymmetricKey);
+            const serverEncryption = this.encryptionService.encryptGroupKeyWithMasterKey(newGroupSymmetricKey);
             
             // 2. Encrypt new key for remaining participants
             const encryptedKeys = this.encryptGroupKeyForParticipants(newGroupSymmetricKey, remainingParticipants);
@@ -131,7 +132,8 @@ class KeyManager {
             const keyPackage = {
                 group_id: groupId,
                 group_symmetric_key: newGroupSymmetricKey, // Plain key for immediate use
-                server_encrypted_key: serverEncryptedKey, // Encrypted with master key
+                server_encrypted_key: serverEncryption.encryptedData, // Encrypted with master key
+                server_encrypted_iv: serverEncryption.iv, // IV for master key encryption
                 encrypted_keys: encryptedKeys, // Encrypted with user public keys
                 key_version: 2, // Increment version
                 created_at: new Date(),

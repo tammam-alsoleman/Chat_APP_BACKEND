@@ -24,6 +24,7 @@ async signUp({ user_name, password, display_name, public_key }) {
         const user = await userRepository.findByUsername(user_name);
         if (!user) throw new Error('User not found');
 
+        // Since password is already hashed from client, compare directly
         if (user.password !== password) throw new Error('Password not true');
 
         const token = jwt.sign({ user_id: user.user_id }, config.JWT_SECRET, { expiresIn: '1h' });

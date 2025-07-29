@@ -35,32 +35,34 @@ class EncryptionService {
 
     /**
      * Encrypt a symmetric key with a user's public key (RSA)
-     * This simulates the server encrypting the group key with user's public key
-     * In real implementation, this would use proper RSA encryption
      * @param {string} symmetricKey - Base64 encoded symmetric key
-     * @param {string} publicKey - User's RSA public key
+     * @param {string} publicKey - User's RSA public key (PEM format)
      * @returns {string} Encrypted symmetric key
      */
     encryptSymmetricKeyWithPublicKey(symmetricKey, publicKey) {
         try {
-            // For now, we'll use a simple encryption method
-            // In production, you'd use proper RSA encryption
             const keyBuffer = Buffer.from(symmetricKey, 'base64');
-            const publicKeyBuffer = Buffer.from(publicKey, 'utf8');
             
-            // Create a hash of the public key for encryption
-            const hash = crypto.createHash('sha256').update(publicKeyBuffer).digest();
-            
-            // XOR encryption (this is just for demonstration - use proper RSA in production)
-            const encrypted = Buffer.alloc(keyBuffer.length);
-            for (let i = 0; i < keyBuffer.length; i++) {
-                encrypted[i] = keyBuffer[i] ^ hash[i % hash.length];
+            // Ensure the public key is in the correct format
+            let formattedPublicKey = publicKey;
+            if (!publicKey.includes('-----BEGIN PUBLIC KEY-----')) {
+                formattedPublicKey = `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`;
             }
+            
+            // Use RSA public encryption
+            const encrypted = crypto.publicEncrypt(
+                {
+                    key: formattedPublicKey,
+                    padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                    oaepHash: 'sha256'
+                },
+                keyBuffer
+            );
             
             return encrypted.toString('base64');
         } catch (error) {
             logger.error('Error encrypting symmetric key with public key:', error);
-            throw new Error('Failed to encrypt symmetric key');
+            throw new Error('Failed to encrypt symmetric key with RSA');
         }
     }
 
@@ -92,24 +94,28 @@ class EncryptionService {
     }
 
     /**
-     * Encrypt a group symmetric key with the master key for storage (deterministic)
+     * Encrypt a group symmetric key with the master key for storage
      * @param {string} groupSymmetricKey - Base64 encoded group key
-     * @returns {string} Encrypted key (no IV needed)
+     * @returns {object} Encrypted key with IV
      */
     encryptGroupKeyWithMasterKey(groupSymmetricKey) {
         try {
             const keyBuffer = Buffer.from(groupSymmetricKey, 'base64');
             const masterKeyBuffer = Buffer.from(this.masterKey, 'base64');
             
-            // Use a fixed IV derived from the master key (deterministic)
-            const iv = crypto.createHash('sha256').update(masterKeyBuffer).digest().slice(0, this.ivSize);
+            // Generate random IV for each encryption
+            const iv = crypto.randomBytes(this.ivSize);
             
             const cipher = crypto.createCipheriv(this.algorithm, masterKeyBuffer, iv);
             
             let encrypted = cipher.update(keyBuffer, 'binary', 'base64');
             encrypted += cipher.final('base64');
             
-            return encrypted;
+            // Return both encrypted data and IV
+            return {
+                encryptedData: encrypted,
+                iv: iv.toString('base64')
+            };
         } catch (error) {
             logger.error('Error encrypting group key with master key:', error);
             throw new Error('Failed to encrypt group key with master key');
@@ -117,18 +123,17 @@ class EncryptionService {
     }
 
     /**
-     * Decrypt a group symmetric key with the master key from storage (deterministic)
+     * Decrypt a group symmetric key with the master key from storage
      * @param {string} encryptedGroupKey - Base64 encoded encrypted group key
+     * @param {string} iv - Base64 encoded IV used for encryption
      * @returns {string} Decrypted group symmetric key (base64)
      */
-    decryptGroupKeyWithMasterKey(encryptedGroupKey) {
+    decryptGroupKeyWithMasterKey(encryptedGroupKey, iv) {
         try {
             const masterKeyBuffer = Buffer.from(this.masterKey, 'base64');
+            const ivBuffer = Buffer.from(iv, 'base64');
             
-            // Use the same fixed IV derived from the master key
-            const iv = crypto.createHash('sha256').update(masterKeyBuffer).digest().slice(0, this.ivSize);
-            
-            const decipher = crypto.createDecipheriv(this.algorithm, masterKeyBuffer, iv);
+            const decipher = crypto.createDecipheriv(this.algorithm, masterKeyBuffer, ivBuffer);
             
             let decrypted = decipher.update(encryptedGroupKey, 'base64', 'binary');
             decrypted += decipher.final('binary');

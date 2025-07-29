@@ -14,16 +14,17 @@ class EncryptionRepository {
     async storeGroupKey(groupId, groupSymmetricKey, keyVersion = 1) {
         try {
             // Encrypt the group key with master key before storing
-            const encryptedKey = encryptionService.encryptGroupKeyWithMasterKey(groupSymmetricKey);
+            const encryption = encryptionService.encryptGroupKeyWithMasterKey(groupSymmetricKey);
             
             const pool = await getPool();
             await pool.request()
                 .input('group_id', sql.Int, groupId)
-                .input('encrypted_key', sql.NVarChar(sql.MAX), encryptedKey)
+                .input('encrypted_key', sql.NVarChar(sql.MAX), encryption.encryptedData)
+                .input('encrypted_iv', sql.NVarChar(sql.MAX), encryption.iv)
                 .input('key_version', sql.Int, keyVersion)
                 .query(`
                     UPDATE group_info 
-                    SET encrypted_key = @encrypted_key, key_version = @key_version 
+                    SET encrypted_key = @encrypted_key, encrypted_iv = @encrypted_iv, key_version = @key_version 
                     WHERE group_id = @group_id
                 `);
             
@@ -102,7 +103,7 @@ class EncryptionRepository {
             const result = await pool.request()
                 .input('group_id', sql.Int, groupId)
                 .query(`
-                    SELECT encrypted_key, key_version 
+                    SELECT encrypted_key, encrypted_iv, key_version 
                     FROM group_info 
                     WHERE group_id = @group_id
                 `);
@@ -113,11 +114,12 @@ class EncryptionRepository {
             
             const record = result.recordset[0];
             
-            // Decrypt the group key (no IV needed - deterministic)
-            const decryptedKey = encryptionService.decryptGroupKeyWithMasterKey(record.encrypted_key);
+            // Decrypt the group key using the stored IV
+            const decryptedKey = encryptionService.decryptGroupKeyWithMasterKey(record.encrypted_key, record.encrypted_iv);
             
             return {
                 encrypted_key: record.encrypted_key,
+                encrypted_iv: record.encrypted_iv,
                 decrypted_key: decryptedKey,
                 key_version: record.key_version
             };
