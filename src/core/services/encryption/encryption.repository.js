@@ -1,7 +1,7 @@
 const sql = require('mssql');
 const { getPool } = require('../../db');
 const logger = require('../../logger');
-const { encryptionService } = require('./index');
+const encryptionService = require('./encryption.service');
 
 class EncryptionRepository {
     /**
@@ -20,11 +20,10 @@ class EncryptionRepository {
             await pool.request()
                 .input('group_id', sql.Int, groupId)
                 .input('encrypted_key', sql.NVarChar(sql.MAX), encryption.encryptedData)
-                .input('encrypted_iv', sql.NVarChar(sql.MAX), encryption.iv)
                 .input('key_version', sql.Int, keyVersion)
                 .query(`
                     UPDATE group_info 
-                    SET encrypted_key = @encrypted_key, encrypted_iv = @encrypted_iv, key_version = @key_version 
+                    SET encrypted_key = @encrypted_key, key_version = @key_version 
                     WHERE group_id = @group_id
                 `);
             
@@ -103,7 +102,7 @@ class EncryptionRepository {
             const result = await pool.request()
                 .input('group_id', sql.Int, groupId)
                 .query(`
-                    SELECT encrypted_key, encrypted_iv, key_version 
+                    SELECT encrypted_key, key_version 
                     FROM group_info 
                     WHERE group_id = @group_id
                 `);
@@ -114,12 +113,11 @@ class EncryptionRepository {
             
             const record = result.recordset[0];
             
-            // Decrypt the group key using the stored IV
-            const decryptedKey = encryptionService.decryptGroupKeyWithMasterKey(record.encrypted_key, record.encrypted_iv);
+            // Decrypt the group key without IV (assuming no IV used)
+            const decryptedKey = encryptionService.decryptGroupKeyWithMasterKey(record.encrypted_key, null);
             
             return {
                 encrypted_key: record.encrypted_key,
-                encrypted_iv: record.encrypted_iv,
                 decrypted_key: decryptedKey,
                 key_version: record.key_version
             };

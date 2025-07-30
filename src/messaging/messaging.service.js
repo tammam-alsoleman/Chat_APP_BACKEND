@@ -40,9 +40,19 @@ class MessagingService {
             throw new Error('Failed to create group encryption keys');
         }
         
-        // Step 4: Add participants to the group
+        // Step 4: Add participants to the group and store their encrypted keys
         for (const username of participantsUsernames) {
             await messagingRepository.addParticipantByUsername(groupId, username);
+        }
+
+        // Step 5: Store encrypted symmetric keys for each participant
+        for (const encryptedKey of keyPackage.encrypted_keys) {
+            await encryptionRepository.storeUserGroupKey(
+                encryptedKey.user_id,
+                groupId,
+                encryptedKey.encrypted_symmetric_key,
+                encryptedKey.key_version
+            );
         }
         
         return { groupId };

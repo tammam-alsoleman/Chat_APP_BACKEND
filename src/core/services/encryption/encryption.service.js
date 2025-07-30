@@ -30,8 +30,30 @@ class EncryptionService {
         }
     }
 
-    // Note: Message encryption/decryption is handled by the client
-    // Server only manages keys and stores encrypted messages
+    /**
+     * Normalize a public key to PKCS#8 PEM format
+     * @param {string} publicKey - The public key string
+     * @returns {string} Normalized PKCS#8 PEM public key
+     * @throws {Error} If the key format is unsupported or invalid
+     */
+    normalizePublicKey(publicKey) {
+        // Remove whitespace and line breaks for checking
+        const key = publicKey.trim();
+
+        if (key.includes('-----BEGIN PUBLIC KEY-----')) {
+            // Already PKCS#8 PEM format
+            return key;
+        } else if (key.includes('-----BEGIN RSA PUBLIC KEY-----')) {
+            // PKCS#1 PEM format - convert to PKCS#8
+            // Minimal conversion by wrapping the PKCS#1 key in a SubjectPublicKeyInfo structure
+            // This requires external libraries or complex ASN.1 encoding, which is not implemented here.
+            // For now, throw an error to indicate unsupported format.
+            throw new Error('PKCS#1 format public keys are not supported. Please provide PKCS#8 format keys.');
+        } else {
+            // Assume raw base64 key without headers - add PKCS#8 headers
+            return `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`;
+        }
+    }
 
     /**
      * Encrypt a symmetric key with a user's public key (RSA)
@@ -43,11 +65,8 @@ class EncryptionService {
         try {
             const keyBuffer = Buffer.from(symmetricKey, 'base64');
             
-            // Ensure the public key is in the correct format
-            let formattedPublicKey = publicKey;
-            if (!publicKey.includes('-----BEGIN PUBLIC KEY-----')) {
-                formattedPublicKey = `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`;
-            }
+            // Normalize the public key to PKCS#8 PEM format
+            const formattedPublicKey = this.normalizePublicKey(publicKey);
             
             // Use RSA public encryption
             const encrypted = crypto.publicEncrypt(
@@ -62,12 +81,12 @@ class EncryptionService {
             return encrypted.toString('base64');
         } catch (error) {
             logger.error('Error encrypting symmetric key with public key:', error);
-            throw new Error('Failed to encrypt symmetric key with RSA');
+            throw new Error('Failed to encrypt symmetric key with RSA: ' + error.message);
         }
     }
 
-    // Note: Message encryption/decryption packages are handled by the client
-    // Server only stores and distributes encrypted messages
+    // Note: Message encryption/decryption is handled by the client
+    // Server only manages keys and stores encrypted messages
 
     /**
      * Generate a random string for key IDs or nonces
@@ -147,4 +166,4 @@ class EncryptionService {
 }
 
 // Export a singleton instance
-module.exports = new EncryptionService(); 
+module.exports = new EncryptionService();
