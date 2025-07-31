@@ -4,11 +4,11 @@ const userRepository = require('./user.repository');
 const logger = require('../core/logger');
 
 class UserService {
-async signUp({ user_name, password, display_name }) {
+async signUp({ user_name, password, display_name, public_key }) {
     const existingUser = await userRepository.findByUsername(user_name);
     if (existingUser) throw new Error('User with the same username already exists');
 
-    const newUser = await userRepository.create({ user_name, password, display_name });
+    const newUser = await userRepository.create({ user_name, password, display_name, public_key });
     const token = jwt.sign({ user_id: newUser.user_id }, config.JWT_SECRET, { expiresIn: '1h' });
     
     logger.info('User created successfully:', { userId: newUser.user_id });

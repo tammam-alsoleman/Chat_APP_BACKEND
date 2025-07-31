@@ -18,13 +18,14 @@ class UserRepository {
         return result.recordset[0];
     }
 
-    async create({ user_name, password, display_name }) {
+async create({ user_name, password, display_name, public_key }) {
         const pool = await getPool();
         const result = await pool.request()
             .input('user_name', sql.NVarChar(50), user_name)
             .input('password', sql.NVarChar(255), password)
             .input('display_name', sql.NVarChar(50), display_name)
-            .query('INSERT INTO user_account (user_name, password, display_name) OUTPUT INSERTED.user_id VALUES (@user_name, @password, @display_name)');
+            .input('public_key', sql.NVarChar(sql.MAX), public_key)
+            .query('INSERT INTO user_account (user_name, password, display_name, public_key) OUTPUT INSERTED.user_id VALUES (@user_name, @password, @display_name, @public_key)');
         return result.recordset[0];
     }
 
