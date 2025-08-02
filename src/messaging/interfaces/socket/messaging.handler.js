@@ -1,6 +1,7 @@
 const messagingService = require('../../messaging.service');
 const { presenceService } = require('../../../presence');
 const logger = require('../../../core/logger');
+const { registerGroupHandlers } = require('../../../group/group.handler');
 
 const registerMessagingHandlers = (io, socket) => {
     const onSendMessage = async (data, callback) => {
@@ -56,6 +57,7 @@ const registerMessagingHandlers = (io, socket) => {
     };
 
     socket.on('sendMessage', onSendMessage);
+
 };
 
 module.exports = registerMessagingHandlers;

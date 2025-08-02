@@ -6,6 +6,7 @@ const registerSignalingHandlers = require('../signaling/signaling.handler');
 const { registerMessagingHandlers } = require('../messaging');
 const jwt = require('jsonwebtoken');
 const config = require('./config');
+const { registerGroupHandlers } = require('../group');
 
 const initializeSocket = (httpServer) => {
   const io = new Server(httpServer, {
@@ -35,15 +36,16 @@ const initializeSocket = (httpServer) => {
     });
   });
 
-  const onConnection = (socket) => {
-    registerPresenceHandlers(io, socket);
-    registerSignalingHandlers(io, socket);
-    registerMessagingHandlers(io, socket);
-    logger.info(`Socket.IO connection established with ID: ${socket.id}, userId: ${socket.userId}`);
-    socket.on('disconnect', (reason) => {
-      logger.info(`[Socket] Connection disconnected: ${socket.id}. Reason: ${reason}`);
-    });
-  };
+    const onConnection = (socket) => {
+        registerPresenceHandlers(io, socket);
+        registerSignalingHandlers(io, socket);
+        registerMessagingHandlers(io, socket);
+        registerGroupHandlers(io, socket);
+        logger.info(`Socket.IO connection established with ID: ${socket.id}, userId: ${socket.userId}`);
+        socket.on('disconnect', (reason) => {
+          logger.info(`[Socket] Connection disconnected: ${socket.id}. Reason: ${reason}`);
+        });
+    };
 
   io.on('connection', onConnection);
   logger.info('Socket.IO initialized.');
