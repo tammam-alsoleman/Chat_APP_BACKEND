@@ -35,9 +35,8 @@ This project is the backend for a chat application that supports video and audio
    DB_OPTIONS_TRUST_SERVER_CERTIFICATE=true
 
 4. **Set Up the Database**
-   Ensure your database is running and accessible. The `DATABASE_URL` should be configured to point to your database instance. For example, if you are using SQL Server, it might look like this:
-   ```plaintext
-   DATABASE_URL=mssql://username:password@localhost:1433/database_name
+   Ensure your database is running and accessible. The `DATABASE_information` should be configured to point to your database instance.
+
    ```
 
 5. **Start the Server**
@@ -56,22 +55,3 @@ This project is the backend for a chat application that supports video and audio
 - jsonwebtoken
 - winston
 
-## Contribution Guidelines
-1. **Fork the Repository**
-2. **Create a New Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Make Your Changes**
-4. **Commit Your Changes**
-   ```bash
-   git commit -m "Add your commit message"
-   ```
-5. **Push to the Branch**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-6. **Open a Pull Request**
-
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
