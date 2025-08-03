@@ -67,9 +67,9 @@ class MessagingRepository {
     }
     
     async findMessagesByGroupId(groupId, options = {}) {
-        const { beforeMessageId, limit = 30 } = options; // قيمة افتراضية هنا أيضاً
-        const pool = getPool();
-        const request = pool.request();
+        const { beforeMessageId, limit = 30 } = options; 
+        const pool = await getPool();
+        const request = await pool.request();
         
         let whereClause = `WHERE m.group_id = @group_id`;
         request.input('group_id', sql.BigInt, groupId);
