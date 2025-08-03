@@ -1,7 +1,7 @@
 # Chat App Backend
 
 ## Description
-This project is the backend for a chat application that supports video and audio calls using WebRTC and message/file transmission using Socket.IO. The backend is built with Node.js and includes several key services:
+This project is the backend for a chat application that supports video and audio calls using WebRTC and message transmission using Socket.IO. The backend is built with Node.js and includes several key services:
 - **Signaling Server**: Manages signaling messages to initialize WebRTC connections.
 - **Presence Service**: Tracks user presence.
 - **Database Communication Service**: Handles communication with the database, including endpoints for various operations.
@@ -34,12 +34,7 @@ This project is the backend for a chat application that supports video and audio
    DB_OPTIONS_ENCRYPT=false
    DB_OPTIONS_TRUST_SERVER_CERTIFICATE=true
 
-4. **Set Up the Database**
-   Ensure your database is running and accessible. The `DATABASE_information` should be configured to point to your database instance.
-
-   ```
-
-5. **Start the Server**
+4. **Start the Server**
    ```bash
    npm start
    ```
@@ -54,4 +49,3 @@ This project is the backend for a chat application that supports video and audio
 - joi
 - jsonwebtoken
 - winston
-
