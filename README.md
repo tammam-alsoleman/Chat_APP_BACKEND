@@ -1,7 +1,7 @@
 # Chat App Backend
 
 ## Description
-This project is the backend for a chat application that supports video and audio calls using WebRTC and message/file transmission using Socket.IO. The backend is built with Node.js and includes several key services:
+This project is the backend for a chat application that supports video and audio calls using WebRTC and message transmission using Socket.IO. The backend is built with Node.js and includes several key services:
 - **Signaling Server**: Manages signaling messages to initialize WebRTC connections.
 - **Presence Service**: Tracks user presence.
 - **Database Communication Service**: Handles communication with the database, including endpoints for various operations.
