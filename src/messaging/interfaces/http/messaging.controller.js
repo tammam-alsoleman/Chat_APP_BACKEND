@@ -72,5 +72,22 @@ class MessagingController {
             res.status(statusCode).json({ error: error.message });
         }
     }
+
+    async getMyEncryptedKey(req, res) {
+    try {
+        const groupId = parseInt(req.params.chatId, 10);
+        const userId = req.user.user_id;
+        
+        const encryptedKey = await messagingService.getEncryptedKeyForUser(userId, groupId);
+
+        if (!encryptedKey) {
+            return res.status(404).json({ error: 'Key not found for this user in this group.' });
+        }
+
+       res.status(200).json({ encryptedGroupKey: encryptedKey });
+    } catch (error) {
+            res.status(500).json({ error: 'Failed to retrieve encrypted key.' });
+    }
+    }
 }
 module.exports = new MessagingController();

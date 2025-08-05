@@ -16,4 +16,6 @@ router.route('/:chatId/participants')
 router.route('/:chatId/messages')
     .get(messagingController.getMessages);
 
+router.route('/:chatId/my-key').get(messagingController.getMyEncryptedKey);
+
 module.exports = router;

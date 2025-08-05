@@ -79,9 +79,7 @@ class MessagingRepository {
             request.input('beforeMessageId', sql.Int, beforeMessageId);
         }
         
-        // بناء الاستعلام النهائي
-        // نستخدم TOP لجلب عدد محدد من الرسائل (limit)
-        // ونرتب تنازلياً لجلب الأحدث أولاً، ثم نعكس الترتيب في التطبيق إذا لزم الأمر
+
         const query = `
             SELECT TOP ${limit}
                 m.message_id, 
@@ -100,8 +98,7 @@ class MessagingRepository {
 
         const result = await request.query(query);
 
-        // النتيجة الآن مرتبة من الأحدث إلى الأقدم، قد تحتاج إلى عكسها في العميل
-        // .reverse()
+
         return result.recordset;
     }
 
@@ -111,6 +108,19 @@ class MessagingRepository {
             .input('group_id', sql.BigInt, groupId)
             .query('SELECT ua.user_name FROM user_account ua JOIN group_participant gp ON ua.user_id = gp.user_id WHERE gp.group_id = @group_id');
         return result.recordset.map(user => user.user_name);
+    }
+
+    async findEncryptedKey(userId, groupId) {
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('user_id', sql.Int, userId)
+        .input('group_id', sql.BigInt, groupId)
+        .query('SELECT group_key FROM group_participant WHERE user_id = @user_id AND group_id = @group_id');
+    
+    if (result.recordset.length > 0) {
+        return result.recordset[0].group_key;
+    }
+    return null;
     }
 }
 

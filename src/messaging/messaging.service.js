@@ -54,7 +54,6 @@ class MessagingService {
     }
 
     async saveAndBroadcastMessage({ sender_id, group_id, text_message, clientMessageId }) {
-        // This function is already correct
         const isMember = await messagingRepository.isUserInGroup(sender_id, group_id);
         if (!isMember) throw new Error('User is not a member of the group');
 
@@ -104,6 +103,10 @@ class MessagingService {
         if (!isMember) throw new Error('User is not a member of the group');
 
         return messagingRepository.findMessagesByGroupId(groupId, { beforeMessageId, limit });
+    }
+
+    async getEncryptedKeyForUser(userId, groupId) {
+        return messagingRepository.findEncryptedKey(userId, groupId);
     }
 }
 
