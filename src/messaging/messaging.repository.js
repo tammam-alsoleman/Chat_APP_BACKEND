@@ -79,7 +79,9 @@ class MessagingRepository {
             request.input('beforeMessageId', sql.Int, beforeMessageId);
         }
         
-
+        // بناء الاستعلام النهائي
+        // نستخدم TOP لجلب عدد محدد من الرسائل (limit)
+        // ونرتب تنازلياً لجلب الأحدث أولاً، ثم نعكس الترتيب في التطبيق إذا لزم الأمر
         const query = `
             SELECT TOP ${limit}
                 m.message_id, 
@@ -98,7 +100,8 @@ class MessagingRepository {
 
         const result = await request.query(query);
 
-
+        // النتيجة الآن مرتبة من الأحدث إلى الأقدم، قد تحتاج إلى عكسها في العميل
+        // .reverse()
         return result.recordset;
     }
 
