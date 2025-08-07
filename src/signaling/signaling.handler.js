@@ -9,9 +9,11 @@ module.exports = function registerSignalingHandlers(io, socket) {
       return;
     }
 
+    
     const { toUserId, payload } = data;
     if (!toUserId || !payload) return;
-
+    
+    logger.info(`[Signaling] Attempting to relay '${eventName}' from ${fromUserId} to ${toUserId}.`);
     const targetSocketId = signalingService.getTargetSocketId(toUserId);
 
     if (targetSocketId) {
@@ -26,4 +28,5 @@ module.exports = function registerSignalingHandlers(io, socket) {
   socket.on('offer', (data) => relayEvent('getOffer', data));
   socket.on('answer', (data) => relayEvent('getAnswer', data));
   socket.on('candidate', (data) => relayEvent('getCandidate', data));
+  socket.on('hangup', (data) => relayEvent('getHangup', data));
 };

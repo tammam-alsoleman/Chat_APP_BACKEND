@@ -100,8 +100,6 @@ class MessagingRepository {
 
         const result = await request.query(query);
 
-        // النتيجة الآن مرتبة من الأحدث إلى الأقدم، قد تحتاج إلى عكسها في العميل
-        // .reverse()
         return result.recordset;
     }
 
